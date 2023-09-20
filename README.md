@@ -1,2 +1,2 @@
 # SatViT
-Vision Transformers for Satellite Image Segmentation
+Vision Transformers for Crop Type Recognition
