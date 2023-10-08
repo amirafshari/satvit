@@ -75,7 +75,8 @@ def train_seg(img_height=24, img_width=24, in_channel=10,
 def train_cls(img_height=9, img_width=9, in_channel=10,
                 patch_size=3, embed_dim=128, max_time=60,
                 num_classes=20, num_head=8, dim_feedforward=2048,
-                num_layers=8, batch_size=32, model_type='classification'):
+                num_layers=8, batch_size=32, model_type='classification',
+                isResume=False, weight_path=None):
     # Dataset
     data = PASTIS('./data/PASTIS/', model_type=model_type)
     dataset = DataLoader(data, batch_size=batch_size, shuffle=True)
@@ -101,10 +102,23 @@ def train_cls(img_height=9, img_width=9, in_channel=10,
     # Optimizer
     optimizer = optim.AdamW(model.parameters(), lr=0.001)
 
-    epoch = 10000
+
+    # Resume
+    if isResume == True:
+        checkpoint = torch.load(weight_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+    else:
+        epoch = 0
+
+    
+
+    epochs = 10000
     model.train()
 
-    for i in range(epoch):
+    for i in range(epochs):
         t1 = time.time()
         for img, label in dataset:
             img = img.to(device)
@@ -123,13 +137,15 @@ def train_cls(img_height=9, img_width=9, in_channel=10,
 
         if i % 10 == 0:
             torch.save({
-                    'epoch': i,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': loss,
-                    }, f'epoch_{i}.pt')
+                'epoch': i + epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                }, f'./weights/epoch_{i + epoch}.pt')
+
+
         t2 = time.time()
-        print('Epoch: ', i, 'Loss: ', loss)
+        print('Epoch: ', i, 'Loss: ', loss, 'Time: ', (t2-t1)/60)
 
 
 
@@ -142,6 +158,10 @@ if __name__ == "__main__":
     
     parser.add_argument('--config_file', type=str, default="configs/classification.yaml",
                         help='.yaml configuration file to use')
+    parser.add_argument('--weight', type=str, default='/weights/last.pt', action='store',
+                        help='load pre-trained weight to resume training')
+    parser.add_argument('--resume', type=bool, default=False,
+                        help='resume training')
     # parser.add_argument('--gpu_ids', type=list, default=["0", "1"], action='store',
     #                     help='gpu ids for running experiment')
 
@@ -166,16 +186,18 @@ if __name__ == "__main__":
     model = config['MODEL']['architecture']
     batch_size = config['TRAIN']['batch_size']
 
+    isResume = opt.resume
+    weight_path = opt.weight
 
     if model == 'classification':
         train_cls(img_width=img_width, img_height=img_height, in_channel=in_channel,
         patch_size=patch_size, embed_dim=embed_dim, max_time=max_time, num_classes=num_classes,
-        num_head=num_head, dim_feedforward=dim_feedforward, num_layers=num_layers, batch_size=batch_size)
+        num_head=num_head, dim_feedforward=dim_feedforward, num_layers=num_layers, batch_size=batch_size, isResume=isResume, weight_path=weight_path)
 
     elif model == 'segmentation':
         train_seg(img_width=img_width, img_height=img_height, in_channel=in_channel,
         patch_size=patch_size, embed_dim=embed_dim, max_time=max_time, num_classes=num_classes,
-        num_head=num_head, dim_feedforward=dim_feedforward, num_layers=num_layers, batch_size=batch_size)
+        num_head=num_head, dim_feedforward=dim_feedforward, num_layers=num_layers, batch_size=batch_size, isResume=isResume, weight_path=weight_path)
 
 
     # gpu_ids = opt.gpu_ids
