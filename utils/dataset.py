@@ -113,8 +113,7 @@ class PASTIS(Dataset):
 
         data['labels'] = data['labels'].astype('float32')
         data['labels'] = torch.tensor(data['labels'])
-        if self.model_type == 'classification': 
-            data['labels'] = F.one_hot(data['labels'].long(), num_classes=20)
+
 
         data['doy'] = data['doy'].astype('float32')
         data['doy'] = torch.tensor(data['doy'])
