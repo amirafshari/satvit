@@ -1,3 +1,14 @@
+/data/PASTIS
+/data/PASTIS9
+/data/PASTIS24
+/weights/
+/models/deepsat/
+/checkpoint/
+/tb-logger/
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

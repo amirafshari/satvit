@@ -1,0 +1,16 @@
+MODEL:
+  architecture:  "classification"
+  img_width: 9
+  img_height: 9
+  in_channel: 10
+  patch_size: 3
+  embed_dim: 128
+  max_time: 60
+  num_classes: 20
+  num_head: 8
+  dim_feedforward: 2048
+  num_head: 8
+  num_layers: 8
+
+TRAIN:
+  batch_size: 32
