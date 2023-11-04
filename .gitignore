@@ -2,11 +2,15 @@
 /data/PASTIS9
 /data/PASTIS24
 /weights/
+/checkpoints_segmentation/
+/tb_logs_segmentation/
+checkpoints_classification/
+tb_logs_classification/
+/tb-logger/
+/checkpoint/
 /models/deepsat/
 /checkpoint/
 /tb-logger/
-
-
 
 
 # Byte-compiled / optimized / DLL files

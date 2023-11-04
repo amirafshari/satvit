@@ -15,6 +15,14 @@ python data2windows.py --rootdir PASTIS --savedir $(pwd)/outputDirectory --HWout
 ```
 
 ## Training
-`python train.py --config_file ./configs/classification.yaml`
+```
+python train.py --config_file ./configs/segmentation.yaml
+python train.py --config_file ./configs/classification.yaml
+```
+
+## Finetuning
+```
+python finetune.py --config_file ./configs/Finetuning.yaml
+```
 
 ## Evaluation

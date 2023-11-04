@@ -1,4 +1,4 @@
-from utils.training import TrainingPipeline
+from utils.finetuning import TrainingPipeline
 import time
 import yaml
 import argparse
@@ -18,7 +18,7 @@ def start_tensorboard(log_dir='./tb_logs', port=6006):
 def main():
 
     parser = argparse.ArgumentParser(description='Enter your parameters')
-    parser.add_argument('--config_file', type=str, default="configs/segmentation.yaml",
+    parser.add_argument('--config_file', type=str, default="configs/Finetuning.yaml",
                         help='.yaml configuration file to use')
 
     opt = parser.parse_args()
@@ -28,25 +28,14 @@ def main():
         config = yaml.safe_load(f)
 
     architecture = config['MODEL']['architecture']
-    img_width = config['MODEL']['img_width']
-    img_height = config['MODEL']['img_height']
-    in_channel = config['MODEL']['in_channel']
-    patch_size = config['MODEL']['patch_size']
-    embed_dim = config['MODEL']['embed_dim']
-    max_time = config['MODEL']['max_time']
-    num_classes = config['MODEL']['num_classes']
-    num_head = config['MODEL']['num_head']
-    dim_feedforward = config['MODEL']['dim_feedforward']
-    num_layers = config['MODEL']['num_layers']
     batch_size = config['TRAIN']['batch_size']
     learning_rate = config['TRAIN']['learning_rate']
     max_epochs = config['TRAIN']['max_epochs']
     dataset_path = config['DATA']['Pastis24']
     train_ratio = config['DATA']['train_ratio']
     val_ratio = config['DATA']['val_ratio']
-    dropoutratio = config['MODEL']['dropoutratio']
 
-    pipeline = TrainingPipeline(architecture, dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs, img_width, img_height, in_channel, patch_size, embed_dim, max_time, num_classes, num_head, dim_feedforward, num_layers, dropoutratio)
+    pipeline = TrainingPipeline(architecture, dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs)
     
     # tb_process = start_tensorboard()
     # print("TensorBoard started. You can view logs at http://localhost:6006/")

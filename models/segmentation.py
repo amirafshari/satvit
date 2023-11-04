@@ -1,9 +1,19 @@
+from functools import partial
+from typing import Any, Callable, Dict, List, NamedTuple, Optional
+from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import optim
+import time
+from torch.utils.data.dataset import random_split
 from torch import nn, einsum
 from einops import rearrange
 from einops.layers.torch import Rearrange
+from torch import nn, einsum
+from einops import rearrange
+from einops.layers.torch import Rearrange
+
 
 
 
@@ -67,7 +77,7 @@ class Attention(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0.):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout):
         super().__init__()
         self.layers = nn.ModuleList([])
         self.norm = nn.LayerNorm(dim)
@@ -83,21 +93,12 @@ class Transformer(nn.Module):
             x = ff(x) + x
         return self.norm(x)
 
-
-
-
-
-
-
-
-
-
-
 class Segmentation(nn.Module):
     def __init__(self, img_height=24, img_width=24, in_channel=10,
                        patch_size=3, embed_dim=128, max_time=60,
                        num_classes=20, num_head=4, dim_feedforward=2048,
-                       num_layers=4
+                       num_layers=4 , dropoutratio=0.5
+
                 ):
         super().__init__()
         
@@ -108,7 +109,7 @@ class Segmentation(nn.Module):
         self.d = embed_dim
         self.T = max_time
         self.K = num_classes
-
+        self.dropoutratio = dropoutratio
         self.d_model = self.d
         self.num_head = num_head
         self.dim_feedforward = self.d
@@ -118,6 +119,7 @@ class Segmentation(nn.Module):
         self.nh = int(self.H / self.P)
         self.nw = int(self.W / self.P)
 
+        self.dropout = nn.Dropout( p = self.dropoutratio)
 
         '''
         PARAMETERS
@@ -129,7 +131,8 @@ class Segmentation(nn.Module):
         # self.encoder = nn.TransformerEncoder(self.encoderLayer, num_layers=self.num_layers)
 
         # DeepSat Encoder
-        self.encoder = Transformer(self.d, self.num_layers, self.num_head, 32, self.d*4)
+        self.encoder = Transformer(self.d, self.num_layers, self.num_head, 32, self.d*4, dropoutratio)
+
 
 
         # torchvision Encoder
@@ -174,6 +177,8 @@ class Segmentation(nn.Module):
         B, T, C, H, W = x_sits.shape # (B, T, C, H, W)
         x_sits = x_sits.reshape(B, C, T, H, W) # (B, C, T, H, W)
         x_sits = self.projection(x_sits) # (B, d, T, nw, nh)
+        x_sits = self.dropout(x_sits) 
+
         x_sits = x_sits.reshape(B, self.d, T, self.nh*self.nw) # (B, d, T, N)
         # x_sits = x_sits + self.pos_emb # (B, d, T, N)  we dont add pos embedding here, cuz we need the pure data for the temporal encoder
         x_sits = x_sits.permute(0,3,2,1) # (B, N, T, d)
@@ -198,6 +203,8 @@ class Segmentation(nn.Module):
         add temporal embeddings (N*K) to the Time Series patches (T)
         '''
         x = x_sits + Pt.unsqueeze(1) # (B, N, T, d)
+        x = self.dropout(x)
+
         temporal_cls_token = self.temporal_cls_token # (1, N, K, d)
         temporal_cls_token = temporal_cls_token.repeat(B, 1, 1, 1) # (B, N, K, d)
         temporal_cls_token = temporal_cls_token.reshape(B*self.N, self.K, self.d) # (B*N, K, d)
@@ -219,6 +226,8 @@ class Segmentation(nn.Module):
         '''
         Ps = self.spatial_emb # (1, N, d)
         x = x + Ps # (B*K, N, d)
+        x = self.dropout(x)
+
         '''
         # For Classification Only
         # spatial_cls_token = self.spatial_cls_token # (1, K, d)
@@ -236,7 +245,8 @@ class Segmentation(nn.Module):
         '''
         # classes = x[:,:,0,:] # (B, K, d)
         # x = x[:,:,1:,:] # (B, K, N, d)
-        
+        x = self.dropout(x)
+
         x = self.mlp_head(x) # (B, N, K, P*P)
 
 
