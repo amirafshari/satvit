@@ -8,14 +8,14 @@ from ignite.metrics import Loss
 from ignite.contrib.handlers.tensorboard_logger import TensorboardLogger, OutputHandler, WeightsScalarHandler, WeightsHistHandler, GradsScalarHandler
 from ignite.handlers import LRScheduler
 from torch.optim.lr_scheduler import StepLR
-from data.Datapreparation import PASTIS, PASTISDataLoader
-from criterion.LossFunctions import MaskedCrossEntropyLoss , FocalLoss
+from utils.dataset import PASTIS, PASTISDataLoader
+from criterion.loss import MaskedCrossEntropyLoss , FocalLoss
 from models.segmentation import Segmentation 
 from models.classification import Classification
 from torch import optim
 from ignite.metrics import Metric
 from ignite.metrics.metric import sync_all_reduce, reinit__is_reduced
-from criterion.Acuuracy import CustomAccuracy
+from criterion.accuracy import CustomAccuracy
 from ignite.contrib.handlers.tqdm_logger import ProgressBar  
 import torch as nn
 
