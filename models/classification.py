@@ -99,7 +99,6 @@ class Classification(nn.Module):
         self.d = embed_dim
         self.T = max_time
         self.K = num_classes
-        self.dropoutratio = dropoutratio
 
         self.d_model = self.d
         self.num_head = num_head
@@ -110,7 +109,7 @@ class Classification(nn.Module):
         self.nh = int(self.H / self.P)
         self.nw = int(self.W / self.P)
 
-        self.dropout = nn.Dropout( p = self.dropoutratio)
+        self.dropout = nn.Dropout(p=dropoutratio)
         '''
         PARAMETERS
         '''
@@ -121,7 +120,7 @@ class Classification(nn.Module):
         # self.encoder = nn.TransformerEncoder(self.encoderLayer, num_layers=self.num_layers)
 
         # DeepSat Encoder
-        self.encoder = Transformer(self.d, self.num_layers, self.num_head, 32, self.d*4)
+        self.encoder = Transformer(self.d, self.num_layers, self.num_head, 32, self.d*4, dropoutratio)
 
 
         # torchvision Encoder

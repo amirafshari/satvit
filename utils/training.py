@@ -3,10 +3,9 @@ import torch
 import torch.nn.functional as F
 import logging
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator, Engine
-from ignite.handlers import ModelCheckpoint, EarlyStopping
+from ignite.handlers import ModelCheckpoint, EarlyStopping, LRScheduler
 from ignite.metrics import Loss
 from ignite.contrib.handlers.tensorboard_logger import TensorboardLogger, OutputHandler, WeightsScalarHandler, WeightsHistHandler, GradsScalarHandler
-from ignite.handlers import LRScheduler
 from torch.optim.lr_scheduler import StepLR
 from utils.dataset import PASTIS, PASTISDataLoader
 from criterion.loss import MaskedCrossEntropyLoss , FocalLoss
@@ -42,16 +41,22 @@ class TrainingPipeline:
         self.architecture = architecture
         self.dropoutratio = dropoutratio
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         if self.architecture == "segmentation":
             
-            self.model = Segmentation(img_width=img_width, img_height=img_height, in_channel=in_channel, patch_size=patch_size, embed_dim=embed_dim, max_time=max_time, num_head=num_head, num_layers=num_layers, num_classes=num_classes, dropoutratio=dropoutratio)
+            self.model = Segmentation(img_width=img_width, img_height=img_height, in_channel=in_channel,
+                            patch_size=patch_size, embed_dim=embed_dim, max_time=max_time,
+                            num_head=num_head, num_layers=num_layers,
+                            num_classes=num_classes, dropoutratio=dropoutratio).to(self.device)
+
             self.criterion = MaskedCrossEntropyLoss()
         elif self.architecture == "classification":
 
             self.model = Classification(img_height=img_height, img_width=img_width, in_channel=in_channel,
                        patch_size=patch_size, embed_dim=embed_dim, max_time=max_time,
                        num_classes=num_classes, num_head=num_head, dim_feedforward=dim_feedforward,
-                       num_layers=num_layers, dropoutratio=dropoutratio)
+                       num_layers=num_layers, dropoutratio=dropoutratio).to(self.device)
             
             self.criterion = FocalLoss()
 
@@ -75,12 +80,10 @@ class TrainingPipeline:
             os.makedirs(model_save_dir)
 
     def train_model(self):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(device)
-
+        
         # Create trainer and evaluator
-        trainer = create_supervised_trainer(self.model, self.optimizer, self.criterion, device=device)
-        evaluator = create_supervised_evaluator(self.model, metrics={'Loss': Loss(self.criterion), 'Accuracy': CustomAccuracy()}, device=device)
+        trainer = create_supervised_trainer(self.model, self.optimizer, self.criterion, device=self.device)
+        evaluator = create_supervised_evaluator(self.model, metrics={'Loss': Loss(self.criterion), 'Accuracy': CustomAccuracy()}, device=self.device)
         
         @trainer.on(Events.EPOCH_STARTED)
         def start_of_epoch(engine):
@@ -121,13 +124,22 @@ class TrainingPipeline:
         @trainer.on(Events.EPOCH_COMPLETED(once=1))
         def save_first_model(engine):
             epoch = engine.state.epoch
-            torch.save(self.model.state_dict(), os.path.join(f'./checkpoints_{self.architecture}', 'first_model.pth'))
+            torch.save({
+                'model_state_dict': self.model.state_dict(),
+                'epoch': epoch,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }, os.path.join(f'./checkpoints_{self.architecture}', 'first_model.pth'))
 
         # Save the last model after each epoch
         @trainer.on(Events.EPOCH_COMPLETED)
         def save_last_model(engine):
             epoch = engine.state.epoch
-            torch.save(self.model.state_dict(), os.path.join(f'./checkpoints_{self.architecture}', 'last_model.pth'))
+            torch.save({
+                'model_state_dict': self.model.state_dict(),
+                'epoch': epoch,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            },
+            os.path.join(f'./checkpoints_{self.architecture}', 'last_model.pth'))
 
         # Save the best model based on validation accuracy
         best_accuracy = 0.0
@@ -138,7 +150,11 @@ class TrainingPipeline:
             nonlocal best_accuracy
             if accuracy > best_accuracy:
                 epoch = engine.state.epoch
-                torch.save(self.model.state_dict(), os.path.join(f'./checkpoints_{self.architecture}', f'best_model_epoch_{epoch}.pth'))
+                torch.save({
+                'model_state_dict': self.model.state_dict(),
+                'epoch': epoch,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }, os.path.join(f'./checkpoints_{self.architecture}', f'best_model_epoch_{epoch}.pth'))
                 best_accuracy = accuracy
 
         @trainer.on(Events.EPOCH_COMPLETED)
@@ -165,3 +181,14 @@ class TrainingPipeline:
     def run(self):
         self.setup_directories(f'./tb_logs_{self.architecture}', f'./checkpoints_{self.architecture}')
         self.train_model()
+
+
+
+    def resume_training(self, checkpoint_path):
+        # Load the model state from the checkpoint
+        checkpoint = torch.load(checkpoint_path)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # Continue training from the last epoch
+
+        self.run()

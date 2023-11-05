@@ -109,7 +109,6 @@ class Segmentation(nn.Module):
         self.d = embed_dim
         self.T = max_time
         self.K = num_classes
-        self.dropoutratio = dropoutratio
         self.d_model = self.d
         self.num_head = num_head
         self.dim_feedforward = self.d
@@ -119,7 +118,7 @@ class Segmentation(nn.Module):
         self.nh = int(self.H / self.P)
         self.nw = int(self.W / self.P)
 
-        self.dropout = nn.Dropout( p = self.dropoutratio)
+        self.dropout = nn.Dropout(p=dropoutratio)
 
         '''
         PARAMETERS

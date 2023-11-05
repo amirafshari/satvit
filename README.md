@@ -20,6 +20,12 @@ python train.py --config_file ./configs/segmentation.yaml
 python train.py --config_file ./configs/classification.yaml
 ```
 
+### Resume
+```
+python train.py --config_file ./configs/segmentation.yaml --resume True
+python train.py --config_file ./configs/classification.yaml --resume True
+```
+
 ## Finetuning
 ```
 python finetune.py --config_file ./configs/Finetuning.yaml

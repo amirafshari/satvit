@@ -13,7 +13,7 @@ MODEL:
   dropoutratio: 0.5
 
 TRAIN:
-  batch_size: 164
+  batch_size: 8
   learning_rate: 0.001
   max_epochs: 300
 
