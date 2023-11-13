@@ -76,7 +76,7 @@ def get_rgb(x, batch_index=0, t_show=1):
 class PASTIS(Dataset):
     def __init__(self, pastis_path):
         self.pastis_path = pastis_path
-        self.file_names = os.listdir(self.pastis_path)
+        self.file_names = os.listdir(self.pastis_path)[:1000]
         random.shuffle(self.file_names)
         self.to_cutorpad = CutOrPad()
 
