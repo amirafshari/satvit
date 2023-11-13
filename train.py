@@ -50,7 +50,7 @@ def main():
     dropoutratio = config['MODEL']['dropoutratio']
     l2 = config['TRAIN']['l2']
 
-    pipeline = TrainingPipeline(architecture, dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs, img_width, img_height, in_channel, patch_size, embed_dim, max_time, num_classes, num_head, dim_feedforward, num_layers, dropoutratio)
+    pipeline = TrainingPipeline(architecture, dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs, img_width, img_height, in_channel, patch_size, embed_dim, max_time, num_classes, num_head, dim_feedforward, num_layers, dropoutratio, l2)
     
     # tb_process = start_tensorboard()
     # print("TensorBoard started. You can view logs at http://localhost:6006/")
