@@ -20,7 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description='Enter your parameters')
     parser.add_argument('--config_file', type=str, default="configs/segmentation.yaml",
                         help='.yaml configuration file to use')
-    parser.add_argument('--resume', type=bool, default=False)
+    parser.add_argument('--resume', type=str, default=False)
 
     opt = parser.parse_args()
     config_file = opt.config_file
@@ -54,7 +54,7 @@ def main():
     # tb_process = start_tensorboard()
     # print("TensorBoard started. You can view logs at http://localhost:6006/")
     if resume:
-        pipeline.resume_training(f'checkpoints_{architecture}/last_model.pth')
+        pipeline.resume_training(resume)
         
     pipeline.run()
 
