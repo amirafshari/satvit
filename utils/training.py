@@ -1,4 +1,5 @@
 import os
+import datetime
 import torch
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
@@ -78,17 +79,27 @@ class TrainingPipeline:
 
 
     @staticmethod
-    def setup_directories(log_dir, model_save_dir):
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        if not os.path.exists(model_save_dir):
-            os.makedirs(model_save_dir)
+    def setup_directories(architecture):
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def train_model(self):
+        if not os.path.exists(f'runs/{architecture}/'):
+            os.makedirs(f'runs/{architecture}/')
+        if not os.path.exists(f'runs/{architecture}/'):
+            os.makedirs(f'runs/{architecture}/')
+
+
+        if not os.path.exists(f'runs/{architecture}/{date}/logs'):
+            os.makedirs(f'runs/{architecture}/{date}/logs/')
+        if not os.path.exists(f'runs/{architecture}/{date}/weights/'):
+            os.makedirs(f'runs/{architecture}/{date}/weights/')
+
+        return date
+
+    def train_model(self, dir):
 
         #WandBlogger Object Creation
         wandb_logger = WandBLogger(
-        project="pytorch-ignite-integration",
+        project="satellite-time-series",
         name="classification",
         config={"max_epochs": self.max_epochs, "batch_size": self.batch_size},
         tags=["pastis", "classification"]
@@ -125,13 +136,13 @@ class TrainingPipeline:
 
 
         # Set up Tensorboard logging
-        tb_logger = TensorboardLogger(log_dir=f'./tb_logs_{self.architecture}')
+        tb_logger = TensorboardLogger(log_dir=f'./runs/{self.architecture}/{dir}/logs/')
         tb_logger.attach(trainer, log_handler=OutputHandler(tag="training", output_transform=lambda loss: {'loss': loss}), event_name=Events.EPOCH_COMPLETED)
         tb_logger.attach(evaluator, log_handler=OutputHandler(tag="validation", metric_names=["Loss", "Accuracy"], global_step_transform=global_step_from_engine(trainer)), event_name=Events.EPOCH_COMPLETED)
 
 
         # Checkpoint Handler
-        checkpoint_handler = ModelCheckpoint(f'./checkpoints_{self.architecture}', 'model', n_saved=3, require_empty=False)
+        checkpoint_handler = ModelCheckpoint(f'./runs/{self.architecture}/{dir}/weights//', 'model', n_saved=3, require_empty=False)
 
 
         # Early stopping
@@ -156,7 +167,7 @@ class TrainingPipeline:
                 'epoch': epoch,
                 'optimizer_state_dict': self.optimizer.state_dict(),
             },
-            os.path.join(f'./checkpoints_{self.architecture}', 'last_model.pth'))
+            os.path.join(f'./runs/{self.architecture}/{dir}/weights/', 'last_model.pth'))
 
         # Save the best model based on validation accuracy
         best_accuracy = 0.0
@@ -171,7 +182,7 @@ class TrainingPipeline:
                 'model_state_dict': self.model.state_dict(),
                 'epoch': epoch,
                 'optimizer_state_dict': self.optimizer.state_dict(),
-            }, os.path.join(f'./checkpoints_{self.architecture}', f'best_model_epoch_{epoch}.pth'))
+            }, os.path.join(f'./runs/{self.architecture}/{dir}/weights/', f'best_model_epoch_{epoch}.pth'))
                 best_accuracy = accuracy
 
         @trainer.on(Events.EPOCH_COMPLETED)
@@ -197,8 +208,8 @@ class TrainingPipeline:
         tb_logger.close()
 
     def run(self):
-        self.setup_directories(f'./tb_logs_{self.architecture}', f'./checkpoints_{self.architecture}')
-        self.train_model()
+        dir = self.setup_directories(self.architecture)
+        self.train_model(dir)
 
 
 

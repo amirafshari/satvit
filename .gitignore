@@ -12,6 +12,7 @@ tb_logs_classification/
 /checkpoint/
 /tb-logger/
 /wandb/
+/runs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
