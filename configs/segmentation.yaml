@@ -9,14 +9,15 @@ MODEL:
   num_classes: 20
   num_head: 4
   dim_feedforward: 2048
-  num_layers: 8
-  dropoutratio: 0.5
+  num_layers: 6
+  dropoutratio: 0.2
 
 
 TRAIN:
   batch_size: 8
   learning_rate: 0.001
   max_epochs: 300
+  l2: 0.01
 
 
 

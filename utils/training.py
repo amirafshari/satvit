@@ -25,7 +25,7 @@ from models.classification import Classification
 
 class TrainingPipeline:
 
-    def __init__(self, architecture ,dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs, img_width, img_height, in_channel, patch_size, embed_dim, max_time, num_classes, num_head, dim_feedforward, num_layers, dropoutratio ):
+    def __init__(self, architecture ,dataset_path, batch_size, train_ratio, val_ratio, learning_rate, max_epochs, img_width, img_height, in_channel, patch_size, embed_dim, max_time, num_classes, num_head, dim_feedforward, num_layers, dropoutratio, l2):
         self.dataset_path = dataset_path
         self.batch_size = batch_size
         self.train_ratio = train_ratio
@@ -44,6 +44,7 @@ class TrainingPipeline:
         self.num_layers = num_layers
         self.architecture = architecture
         self.dropoutratio = dropoutratio
+        self.l2 = l2
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -68,7 +69,7 @@ class TrainingPipeline:
         self.data_loader = PASTISDataLoader(dataset_path=dataset_path, batch_size=batch_size, train_ratio=train_ratio, val_ratio=val_ratio)
         self.train_loader, self.val_loader, self.test_loader = self.data_loader.get_data_loaders()
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=1e-5)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.l2)
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -100,8 +101,8 @@ class TrainingPipeline:
         #WandBlogger Object Creation
         wandb_logger = WandBLogger(
         project="satellite-time-series",
-        name="classification",
-        config={"max_epochs": self.max_epochs, "batch_size": self.batch_size},
+        name=self.architecture,
+        config={"max_epochs": self.max_epochs, "batch_size": self.batch_size, 'learning_rate': self.learning_rate, 'num_head': self.num_head, 'dim_feedforward': self.dim_feedforward, 'num_layers': self.num_layers, 'dropoutratio': self.dropoutratio}, 
         tags=["pastis", "classification"]
         )
         
@@ -150,8 +151,8 @@ class TrainingPipeline:
             val_loss = engine.state.metrics['Loss']
             return -val_loss
 
-        handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
-        evaluator.add_event_handler(Events.EPOCH_COMPLETED, handler)
+        # handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
+        # evaluator.add_event_handler(Events.EPOCH_COMPLETED, handler)
 
         # Learning rate scheduler
         scheduler = StepLR(self.optimizer, step_size=10, gamma=0.5)
