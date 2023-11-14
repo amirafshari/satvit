@@ -69,7 +69,7 @@ class TrainingPipeline:
         self.data_loader = PASTISDataLoader(dataset_path=dataset_path, batch_size=batch_size, train_ratio=train_ratio, val_ratio=val_ratio)
         self.train_loader, self.val_loader, self.test_loader = self.data_loader.get_data_loaders()
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.l2)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.learning_rate, weight_decay=self.l2)
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
