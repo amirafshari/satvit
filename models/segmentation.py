@@ -176,7 +176,7 @@ class Segmentation(nn.Module):
         B, T, C, H, W = x_sits.shape # (B, T, C, H, W)
         x_sits = x_sits.reshape(B, C, T, H, W) # (B, C, T, H, W)
         x_sits = self.projection(x_sits) # (B, d, T, nw, nh)
-        x_sits = self.dropout(x_sits) 
+        # x_sits = self.dropout(x_sits) 
 
         x_sits = x_sits.reshape(B, self.d, T, self.nh*self.nw) # (B, d, T, N)
         # x_sits = x_sits + self.pos_emb # (B, d, T, N)  we dont add pos embedding here, cuz we need the pure data for the temporal encoder
@@ -202,7 +202,7 @@ class Segmentation(nn.Module):
         add temporal embeddings (N*K) to the Time Series patches (T)
         '''
         x = x_sits + Pt.unsqueeze(1) # (B, N, T, d)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
         temporal_cls_token = self.temporal_cls_token # (1, N, K, d)
         temporal_cls_token = temporal_cls_token.repeat(B, 1, 1, 1) # (B, N, K, d)
@@ -244,7 +244,7 @@ class Segmentation(nn.Module):
         '''
         # classes = x[:,:,0,:] # (B, K, d)
         # x = x[:,:,1:,:] # (B, K, N, d)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
         x = self.mlp_head(x) # (B, N, K, P*P)
 

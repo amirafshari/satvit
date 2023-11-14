@@ -165,7 +165,7 @@ class Classification(nn.Module):
         B, T, C, H, W = x_sits.shape # (B, T, C, H, W)
         x_sits = x_sits.reshape(B, C, T, H, W) # (B, C, T, H, W)
         x_sits = self.projection(x_sits) # (B, d, T, nw, nh)
-        x_sits = self.dropout(x_sits) 
+        # x_sits = self.dropout(x_sits) 
         x_sits = x_sits.reshape(B, self.d, T, self.nh*self.nw) # (B, d, T, N)
         # x_sits = x_sits + self.pos_emb # (B, d, T, N)  we dont add pos embedding here, cuz we need the pure data for the temporal encoder
         x_sits = x_sits.permute(0,3,2,1) # (B, N, T, d)
@@ -190,7 +190,7 @@ class Classification(nn.Module):
         add temporal embeddings (N*K) to the Time Series patches (T)
         '''
         x = x_sits + Pt.unsqueeze(1) # (B, N, T, d)
-        x = self.dropout(x)
+        # x = self.dropout(x)
         temporal_cls_token = self.temporal_cls_token # (1, N, K, d)
         temporal_cls_token = temporal_cls_token.repeat(B, 1, 1, 1) # (B, N, K, d)
         temporal_cls_token = temporal_cls_token.reshape(B*self.N, self.K, self.d) # (B*N, K, d)
@@ -220,7 +220,7 @@ class Classification(nn.Module):
         spatial_cls_token = spatial_cls_token.reshape(B*self.K, 1, self.d) # (B*K, 1, d)
         x = torch.cat([spatial_cls_token, x], dim=1) # (B*K, 1+N, d)
         x = self.spatial_transformer(x) # (B*K, N+1, d)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
 
         '''
