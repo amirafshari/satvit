@@ -105,7 +105,7 @@ class TrainingPipeline:
         config={"max_epochs": self.max_epochs, "batch_size": self.batch_size, 'learning_rate': self.learning_rate,
                 'num_head': self.num_head, 'dim_feedforward': self.dim_feedforward, 'num_layers': self.num_layers,
                 'dropoutratio': self.dropoutratio, 'l2': self.l2}, 
-        tags=["pastis", "classification"]
+        tags=["pastis", self.architecture]
         )
         
         # Create trainer and evaluator
