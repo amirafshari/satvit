@@ -232,7 +232,7 @@ class TrainingPipeline:
 
        
         trainer.run(self.train_loader, max_epochs=self.max_epochs)
-        wandb_logger.closer()
+        wandb_logger.close()
         tb_logger.close()
 
     def run(self):
