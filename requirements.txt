@@ -1,1 +1,9 @@
 torch==2.0.1+cu117
+tqdm
+tensorboardX==2.6.2.2
+wandb==0.16.0
+torchvision==0.15.2
+PyYAML==6.0.1
+einops==0.7.0
+pandas==2.1.1
+pytorch-ignite==0.4.12
