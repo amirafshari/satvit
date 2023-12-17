@@ -198,6 +198,7 @@ class TrainingPipeline:
             },
             os.path.join(f'./runs/{self.architecture}/{dir}/weights/', 'last_model.pth'))
 
+
         # Save the best model based on validation metrics
         best_accuracy = 0.0
         @trainer.on(Events.EPOCH_COMPLETED)
@@ -219,20 +220,33 @@ class TrainingPipeline:
             }, os.path.join(f'./runs/{self.architecture}/{dir}/weights/', f'best_epoch_{epoch}_val_acc_{epoch_accuracy}.pth'))
                 best_accuracy = epoch_accuracy
 
+
+
         @trainer.on(Events.EPOCH_COMPLETED)
         def log_training_results(engine):
-            # self.model.eval()
-            # evaluator.run(self.train_loader)
-            # metrics = evaluator.state.metrics
-            # avg_loss = metrics['loss']
-            # avg_accuracy = metrics['accuracy']
-            # pbar.log_message(f"Training Results - Epoch: {engine.state.epoch}  Epoch loss: {avg_loss:.4f} Epoch accuracy: {avg_accuracy:.4f}")
-
             wandb_logger.attach_output_handler(
             trainer,
             event_name=Events.EPOCH_COMPLETED,
             tag="training",
             output_transform=lambda loss: {'loss': loss},
+            )
+
+
+
+        @trainer.on(Events.EPOCH_COMPLETED(every=10))
+        def log_training_results(engine):
+            self.model.eval()
+            evaluator.run(self.train_loader)
+            metrics = evaluator.state.metrics
+            # avg_loss = metrics['loss']
+            avg_accuracy = metrics['accuracy']
+            pbar.log_message(f"Training Results - Epoch: {engine.state.epoch} Epoch accuracy: {avg_accuracy:.4f}")
+
+            wandb_logger.attach_output_handler(
+            trainer,
+            event_name=Events.EPOCH_COMPLETED,
+            tag="training",
+            output_transform=lambda x: {'avg_acc': avg_accuracy},
             )
 
        
