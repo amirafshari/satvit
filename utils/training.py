@@ -4,6 +4,7 @@ import torch
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
 import torch.nn.functional as F
+import torch.nn as nn
 
 import logging
 
@@ -52,7 +53,9 @@ class TrainingPipeline:
             self.model = Segmentation(img_width=img_width, img_height=img_height, in_channel=in_channel,
                             patch_size=patch_size, embed_dim=embed_dim, max_time=max_time,
                             num_head=num_head, num_layers=num_layers,
-                            num_classes=num_classes, dropoutratio=dropoutratio).to(self.device)
+                            num_classes=num_classes, dropoutratio=dropoutratio)
+            self.model= nn.DataParallel(self.model)
+            self.model.to(self.device)
             self.criterion = MaskedCrossEntropyLoss()
 
 
@@ -61,7 +64,9 @@ class TrainingPipeline:
             self.model = Classification(img_height=img_height, img_width=img_width, in_channel=in_channel,
                        patch_size=patch_size, embed_dim=embed_dim, max_time=max_time,
                        num_classes=num_classes, num_head=num_head, dim_feedforward=dim_feedforward,
-                       num_layers=num_layers, dropoutratio=dropoutratio).to(self.device)
+                       num_layers=num_layers, dropoutratio=dropoutratio)
+            self.model= nn.DataParallel(self.model)
+            self.model.to(self.device)
             self.criterion = FocalLoss()
 
 
@@ -81,7 +86,7 @@ class TrainingPipeline:
 
     @staticmethod
     def setup_directories(architecture):
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         if not os.path.exists(f'runs/{architecture}/'):
             os.makedirs(f'runs/{architecture}/')
