@@ -115,7 +115,7 @@ class TrainingPipeline:
         
 
 
-        # Create trainer and evaluator
+        # Metrics
         val_metrics = {
             "accuracy": Accuracy(),
             # "precision": Precision(),
@@ -124,6 +124,8 @@ class TrainingPipeline:
             "loss": Loss(self.criterion)
         }
 
+
+        # Trainer
         def train_step(engine, batch):
             self.model.train()
             self.optimizer.zero_grad()
@@ -136,6 +138,8 @@ class TrainingPipeline:
         trainer = Engine(train_step)
 
 
+
+        # Evaluator
         def validation_step(engine, batch):
             self.model.eval()
             with torch.no_grad():
@@ -144,47 +148,87 @@ class TrainingPipeline:
                 return y_pred, y
         evaluator = Engine(validation_step)
 
+
+
+
         # Attach metrics to the evaluators
         for name, metric in val_metrics.items():
             metric.attach(evaluator, name)
 
-        def score_function(engine):
-            return engine.state.metrics['loss']
+        # def score_function(engine):
+        #     return engine.state.metrics['loss']
+
+
+
+
+
+
+
+
+
 
         ''' Logs '''
-        # WandB Logger
+        # WandB Logger Validation Metrics
+        # wandb_logger.attach_output_handler(
+        # evaluator,
+        # event_name=Events.EPOCH_COMPLETED,
+        # tag="validation",
+        # metric_names=["loss", "accuracy"],
+        # global_step_transform=lambda *_: trainer.state.epoch
+        # )
 
-        wandb_logger.attach_output_handler(
-        evaluator,
-        event_name=Events.EPOCH_COMPLETED,
-        tag="validation",
-        metric_names=["loss", "accuracy"],
-        global_step_transform=lambda *_: trainer.state.epoch
-        )
+
+
+
+
+        # # wandb
+        # wandb_logger.attach_output_handler(
+        # evaluator,
+        # tag="validation",
+        # event_name=Events.EPOCH_COMPLETED,
+        # output_transform=lambda x: {'Validation Epoch Accuracy': epoch_accuracy, 'Validation Epoch Loss': epoch_loss},
+        # global_step_transform=lambda *_: trainer.state.epoch
+        # )
+
+
+
+
+
+
+
+
+
+
+
 
         # Add progress bar
         pbar = ProgressBar(persist=True)
         pbar.attach(trainer, output_transform=lambda loss: {'iteration loss': loss}, event_name=Events.ITERATION_COMPLETED, closing_event_name=Events.EPOCH_COMPLETED)
-        # pbar.attach(trainer)
-
 
         # Set up Tensorboard logging
         tb_logger = TensorboardLogger(log_dir=f'./runs/{self.architecture}/{dir}/logs/')
         tb_logger.attach(trainer, log_handler=OutputHandler(tag="training", output_transform=lambda loss: {'loss': loss}), event_name=Events.EPOCH_COMPLETED)
         tb_logger.attach(evaluator, log_handler=OutputHandler(tag="validation", metric_names=["loss", "accuracy"], global_step_transform=global_step_from_engine(trainer)), event_name=Events.EPOCH_COMPLETED)
 
-
         # Checkpoint Handler
         checkpoint_handler = ModelCheckpoint(f'./runs/{self.architecture}/{dir}/weights//', 'model', n_saved=3, require_empty=False)
+
+
+
 
 
         # Early stopping
         # handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
         # evaluator.add_event_handler(Events.EPOCH_COMPLETED, handler)
-
         # Learning rate scheduler
         # scheduler = StepLR(self.optimizer, step_size=10, gamma=0.5)
         # trainer.add_event_handler(Events.EPOCH_COMPLETED, LRScheduler(scheduler))
+
+
+
+
+
+
 
 
         # Save the last model after each epoch
@@ -199,57 +243,85 @@ class TrainingPipeline:
             os.path.join(f'./runs/{self.architecture}/{dir}/weights/', 'last_model.pth'))
 
 
+
+
         # Save the best model based on validation metrics
         best_accuracy = 0.0
         @trainer.on(Events.EPOCH_COMPLETED)
-        def save_best_model(engine):
-            self.model.eval()
+        def save_best_model_validation_metrics(engine):
+
+            # Metrics
             evaluator.run(self.val_loader)
             metrics = evaluator.state.metrics
-            epoch_loss = metrics['loss']
-            epoch_accuracy = metrics['accuracy']
-            pbar.log_message(f"Validation Results - Epoch: {engine.state.epoch}  Epoch loss: {epoch_loss:.4f} Epoch accuracy: {epoch_accuracy:.4f}")
+            validation_loss = metrics['loss']
+            validation_accuracy = metrics['accuracy']
 
+
+
+
+            # Validation Metrics
+            wandb_logger.attach_output_handler(
+            evaluator,
+            tag="validation",
+            event_name=Events.EPOCH_COMPLETED,
+            output_transform=lambda x: {'Validation Epoch Accuracy': validation_accuracy, 'Validation Epoch Loss': validation_loss},
+            global_step_transform=lambda *_: trainer.state.epoch
+            )
+
+
+            # Progress Bar
+            pbar.log_message(f"Validation Results - Epoch: {engine.state.epoch}  Validation Epoch Loss: {validation_loss:.4f} Validation Epoch Accuracy: {validation_accuracy:.4f}")
+
+
+
+            # Save checkpoint
             nonlocal best_accuracy
-            if epoch_accuracy > best_accuracy:
+            if validation_accuracy > best_accuracy:
                 epoch = engine.state.epoch
                 torch.save({
                 'model_state_dict': self.model.state_dict(),
                 'epoch': epoch,
                 'optimizer_state_dict': self.optimizer.state_dict(),
-            }, os.path.join(f'./runs/{self.architecture}/{dir}/weights/', f'best_epoch_{epoch}_val_acc_{epoch_accuracy}.pth'))
-                best_accuracy = epoch_accuracy
+            }, os.path.join(f'./runs/{self.architecture}/{dir}/weights/', f'best_epoch_{epoch}_val_acc_{validation_accuracy}.pth'))
+                best_accuracy = validation_accuracy
 
 
 
-        @trainer.on(Events.EPOCH_COMPLETED)
-        def log_training_results(engine):
-            wandb_logger.attach_output_handler(
-            trainer,
-            event_name=Events.EPOCH_COMPLETED,
-            tag="training",
-            output_transform=lambda loss: {'loss': loss},
-            )
 
 
-
+        # Log Training Metrics
         @trainer.on(Events.EPOCH_COMPLETED(every=10))
-        def log_training_results(engine):
-            self.model.eval()
+        def log_training_metrics(engine):
             evaluator.run(self.train_loader)
             metrics = evaluator.state.metrics
-            # avg_loss = metrics['loss']
-            avg_accuracy = metrics['accuracy']
-            pbar.log_message(f"Training Results - Epoch: {engine.state.epoch} Epoch accuracy: {avg_accuracy:.4f}")
+            training_loss = metrics['loss'] # you can comment it
+            training_accuracy = metrics['accuracy']
 
+            # Progress Bar
+            pbar.log_message(f"Training Results - Epoch: {engine.state.epoch} Training Epoch Accuracy: {training_accuracy:.4f} Training Epoch Loss: {training_loss:.4f}")
+
+
+
+            # Training Metrics every N epoch
             wandb_logger.attach_output_handler(
-            trainer,
-            event_name=Events.EPOCH_COMPLETED,
+            evaluator,
             tag="training",
-            output_transform=lambda x: {'avg_acc': avg_accuracy},
+            event_name=Events.EPOCH_COMPLETED,
+            output_transform=lambda x: {'Training Epoch Accuracy': training_accuracy, 'Training Epoch Loss': training_loss},
+            global_step_transform=lambda *_: trainer.state.epoch
             )
 
-       
+
+
+
+        # Training Loss
+        wandb_logger.attach_output_handler(
+        trainer,
+        event_name=Events.EPOCH_COMPLETED,
+        tag="training",
+        output_transform=lambda loss: {'loss': loss},
+        )
+
         trainer.run(self.train_loader, max_epochs=self.max_epochs)
         wandb_logger.close()
         tb_logger.close()
@@ -257,8 +329,6 @@ class TrainingPipeline:
     def run(self):
         dir = self.setup_directories(self.architecture)
         self.train_model(dir)
-
-
 
     def resume_training(self, checkpoint_path):
         # Load the model state from the checkpoint
