@@ -13,12 +13,12 @@ MODEL:
   dropoutratio: 0.2
 
 TRAIN:
-  batch_size: 8
+  batch_size: 256
   learning_rate: 0.001
   max_epochs: 300
   l2: 0.01
 
 DATA:
-  Pastis24: '/workspace/PASTIS9/'
-  train_ratio: 0.7
+  Pastis24: 'C:/Users/labmanager/Documents/PASTIS9'
+  train_ratio: 0.75
   val_ratio: 0.15

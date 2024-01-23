@@ -13,6 +13,10 @@ tb_logs_classification/
 /tb-logger/
 /wandb/
 /runs/
+configs/classification.yaml
+configs/segmentation.yaml
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
