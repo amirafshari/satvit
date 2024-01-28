@@ -16,6 +16,7 @@ python data2windows.py --rootdir PASTIS --savedir $(pwd)/outputDirectory --HWout
 
 ## Training
 ```
+HTTPS_PROXY=socks5h://10.21.26.27:2080/ python train.py --config_file ./configs/segmentation.yaml
 python train.py --config_file ./configs/segmentation.yaml
 python train.py --config_file ./configs/classification.yaml
 ```
