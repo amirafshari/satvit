@@ -106,7 +106,6 @@ class TrainingPipeline:
         # WandBlogger Object Creation
         wandb_logger = WandBLogger(
         project="satellite-time-series",
-        name=self.architecture,
         config={"max_epochs": self.max_epochs, "batch_size": self.batch_size, 'learning_rate': self.learning_rate,
                 'num_head': self.num_head, 'dim_feedforward': self.dim_feedforward, 'num_layers': self.num_layers,
                 'dropoutratio': self.dropoutratio, 'l2': self.l2}, 
@@ -155,8 +154,6 @@ class TrainingPipeline:
         for name, metric in val_metrics.items():
             metric.attach(evaluator, name)
 
-        # def score_function(engine):
-        #     return engine.state.metrics['loss']
 
 
 
@@ -168,37 +165,6 @@ class TrainingPipeline:
 
 
         ''' Logs '''
-        # WandB Logger Validation Metrics
-        # wandb_logger.attach_output_handler(
-        # evaluator,
-        # event_name=Events.EPOCH_COMPLETED,
-        # tag="validation",
-        # metric_names=["loss", "accuracy"],
-        # global_step_transform=lambda *_: trainer.state.epoch
-        # )
-
-
-
-
-
-        # # wandb
-        # wandb_logger.attach_output_handler(
-        # evaluator,
-        # tag="validation",
-        # event_name=Events.EPOCH_COMPLETED,
-        # output_transform=lambda x: {'Validation Epoch Accuracy': epoch_accuracy, 'Validation Epoch Loss': epoch_loss},
-        # global_step_transform=lambda *_: trainer.state.epoch
-        # )
-
-
-
-
-
-
-
-
-
-
 
 
         # Add progress bar
