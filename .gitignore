@@ -15,8 +15,9 @@ tb_logs_classification/
 /runs/
 configs/classification.yaml
 configs/segmentation.yaml
-
-
+*.python
+*.pt
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
