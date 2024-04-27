@@ -10,6 +10,7 @@ docker run -it --name 'satvit' -v /media/data/active/PASTIS/PASTIS9/:/workspace/
 
 ## Data
 ```
+cd /media/data/active/PASTIS
 docker run -it --rm -v $(pwd):/workspace pastis:pytorch-2.0.0-cuda11.7-cudnn8-runtime
 python data2windows.py --rootdir PASTIS --savedir $(pwd)/outputDirectory --HWout 9
 ```
